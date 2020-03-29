@@ -129,19 +129,86 @@ void Stack_clear(Stack *stack){
 	stack->index = -1;
 }
 
-read_value
+int is_number(char *string){
 	
+	//keep track of reference
+	char *ptr = string;
 	
-int main(){
-	Stack *stack = Stack_create(MAX_SYMBOLS);
-	printf("Push is successful:%d\n",Stack_push(stack,"-9"));
-	printf("Push is successful:%d\n",Stack_push(stack,"-10"));
-	printf("%s\n",Stack_pop(stack));
-	printf("%s\n",Stack_pop(stack));
-	Stack_free(stack);
-	
-	
+	while( *string != NONE ){
+		switch(*(string++)){
+			case '-':
+			case '+':
+				// return false if only + or - sign
+				if(*(string) == NONE){ 
+					string = ptr;
+					return FALSE; 
+				}
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				break;
+			default:
+				// return false if anything else
+				string = ptr;
+				return FALSE;
+		}
+	}
+	string = ptr;
+	return TRUE;
 }
+
+void populate(Stack *stack){
+	char read_char;
+	char expression_array[MAX_STRING];
+	char *expression = &expression_array[0];
+
+	
+	while (TRUE) {
+				
+		read_char = getc(stdin);
+		
+		if(read_char == '\n' || read_char == NONE || read_char == ' ') { //done parsing the expression
+			
+			// Push the current expression
+			*expression = NONE;
+			expression = &expression_array[0];
+			Stack_push(stack,expression);
+			
+			// Line is done
+			if (read_char == '\n' || read_char == NONE){
+				break;
+			}
+			
+		}
+		else { // Add the current char to the expression
+			*(expression++) = read_char;			
+			
+		}
+					
+	}
+}
+
+int main(){
+	/*Stack *stack = Stack_create(MAX_SYMBOLS);
+	populate(stack);
+	while (!Stack_is_empty(stack)){
+		printf("%s",Stack_pop(stack));
+	}
+	printf("\n");
+	Stack_free(stack); */
+	
+
+}	
+	
+
 		
 	
 	
