@@ -96,12 +96,16 @@ int Stack_push(Stack *stack, char *string) {
 		// if element not initiated
 		if (stack->array[stack->index] == NULL) {
 			stack->array[stack->index] = malloc(MAX_STRING*sizeof(char));
+			// Malloc failed
+			if (stack->array[stack->index] == NULL){
+				return FALSE;
+			}
 		}
 		// return operation outcome
 		return copy_string(stack->array[stack->index],string) ? TRUE : FALSE;		
 		
 	}
-	return 0;
+	return FALSE;
 }
 
 // Function to free all the memory allocated by the stack
@@ -134,13 +138,11 @@ int is_number(char *string){
 	//keep track of reference
 	char *ptr = string;
 	
-	while( *string != NONE ){
-		switch(*(string++)){
+	while( *ptr != NONE ){
+		switch(*(ptr++)){
 			case '-':
-			case '+':
-				// return false if only + or - sign
-				if(*(string) == NONE){ 
-					string = ptr;
+				// return false if only  - sign
+				if(*(ptr) == NONE){ 
 					return FALSE; 
 				}
 				break;
@@ -157,54 +159,82 @@ int is_number(char *string){
 				break;
 			default:
 				// return false if anything else
-				string = ptr;
 				return FALSE;
 		}
 	}
-	string = ptr;
 	return TRUE;
 }
 
-void populate(Stack *stack){
-	char read_char;
-	char expression_array[MAX_STRING];
-	char *expression = &expression_array[0];
-
+int is_variable(char *string){
+	//keep track of reference
+	char *ptr = string;
 	
-	while (TRUE) {
-				
+	while( *ptr != NONE ){
+		
+		if(*ptr == '-' && *ptr != NONE){  }
+		else if (*ptr >= 'a' && *ptr <= 'z') {  }
+		else { return FALSE; }
+		
+		ptr++;
+	}
+	return TRUE;
+
+}
+
+int is_operator(char *string){
+	//keep track of reference
+	char *ptr = string;
+	
+	while( *ptr != NONE ){
+		switch(*(ptr++)){
+			case '-':
+			case '+':
+			case '*':
+			case '/':
+				break;
+			default:
+				// return false if anything else
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+int read_next(char * element){
+	char read_char;
+	//keep reference
+	char *expression = element;
+	while (TRUE) {		
+			
 		read_char = getc(stdin);
 		
 		if(read_char == '\n' || read_char == NONE || read_char == ' ') { //done parsing the expression
 			
-			// Push the current expression
+			// end the current expression
 			*expression = NONE;
-			expression = &expression_array[0];
-			Stack_push(stack,expression);
-			
-			// Line is done
-			if (read_char == '\n' || read_char == NONE){
-				break;
-			}
-			
+			break;			
 		}
 		else { // Add the current char to the expression
 			*(expression++) = read_char;			
 			
-		}
-					
+		}				
 	}
+				
+	// Line is done
+	if (read_char == '\n' || read_char == NONE){
+		return 0;
+	}
+
+	//else 
+	return 1;
 }
 
-int main(){
-	/*Stack *stack = Stack_create(MAX_SYMBOLS);
-	populate(stack);
-	while (!Stack_is_empty(stack)){
-		printf("%s",Stack_pop(stack));
-	}
-	printf("\n");
-	Stack_free(stack); */
+void parse_prefix(Stack *stack){
 	
+	
+}
+
+void main(){
 
 }	
 	
