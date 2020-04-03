@@ -20,28 +20,95 @@ struct LIFO {
 };
 
 typedef struct LIFO Stack;
+// Function to convert a string number represenation to an integer
+int to_int(char *string, int *integer){
+	*integer = 0;
+	if (string == NULL){
+		perror("in function to_int: pointer is NULL\n");
+		return 0;
+	}
+	
+	if (*string == '-'){
+		string++;
+		while (*string){
+			*integer = *integer * 10 + *string - '0';
+			string++;
+		}
+		*integer = -*integer;
+	}
+	else{
+		while (*string){
+			*integer = *integer * 10 + *string - '0';
+			string++;
+		}
+	}
+	return 1;
+}
+// Function to convert an integer to a string number represenation
+int to_string(char *string, int *integer){
+	
+	if (string == NULL){
+		perror("in function to_string: pointer is NULL\n");
+	return 0;
+	
+	// Handle 0 seperatly since (char) 0 = '\0'
+	if(*integer == 0){
+		*string++ = '0';
+		*string = '\0';
+		return 0;
+	}
+	
+	
+}
+}
 
 // Function to copy the contents from one string to another
-char *copy_string(char *target, char *source){
+char *copy_string(char *destination, char *target){
 	
 	// Return if no memory has been allocated
-	if ( target == NULL || source == NULL) {
+	if ( destination == NULL || target == NULL) {
+		perror("in function copy_string: pointer is NULL\n");
 		return NULL;		
 	}
 	
-	// Pointer to the beginning of the target
-	char *ptr = target;
+	// Pointer to the beginning of the destination
+	char *ptr = destination;
 	
-	while (( *target++ = *source++) != NONE);
+	// Copy contents of target into source
+	while (*destination++ = *target++);
 	
 	// End the string with NUL
-	*target = '\0';
-	
-	// Rewind target to original element
-	target = ptr;
+	*destination = '\0';
+
 	
 	return ptr;
 }
+
+// Function to concatenate the target string into the source
+char *concatenate_string(char *destination, char *target){
+	
+	// Return if no memory has been allocated
+	if ( destination == NULL || target == NULL) {
+		perror("in function concatenate_string: pointer is NULL\n");
+		return NULL;		
+	}
+	
+	char* ptr = destination;
+	
+	// Move to end of destination
+	while (*destination){
+		destination++;
+		}
+	
+	// Copy contents of target into source
+	while(*destination++ = *target++);
+	
+	// End the string with NUL
+	*destination = '\0';
+	
+	return ptr;
+}
+
 // Function to initialize the stack
 Stack *Stack_create(unsigned size) {
 	
@@ -72,7 +139,7 @@ int Stack_is_empty(Stack *stack) {
 int Stack_is_full(Stack *stack) {
 	return (stack->index == stack->size-1);
 }
-// Function to check the top value on the stacl
+// Function to check the top value on the stack
 char *Stack_peek(Stack *stack) {
 	if (!Stack_is_empty(stack)) {
 		return stack->array[stack->index];
@@ -135,14 +202,13 @@ void Stack_clear(Stack *stack){
 
 int is_number(char *string){
 	
-	//keep track of reference
-	char *ptr = string;
+
 	
-	while( *ptr != NONE ){
-		switch(*(ptr++)){
+	while( *string ){
+		switch(*(string++)){
 			case '-':
 				// return false if only  - sign
-				if(*(ptr) == NONE){ 
+				if(*(string) == NONE){ 
 					return FALSE; 
 				}
 				break;
@@ -166,27 +232,23 @@ int is_number(char *string){
 }
 
 int is_variable(char *string){
-	//keep track of reference
-	char *ptr = string;
-	
-	while( *ptr != NONE ){
+
+	while( *string ){
 		
-		if(*ptr == '-' && *ptr != NONE){  }
-		else if (*ptr >= 'a' && *ptr <= 'z') {  }
+		if(*string == '-' && *string ){  }
+		else if (*string >= 'a' && *string <= 'z') {  }
 		else { return FALSE; }
 		
-		ptr++;
+		string++;
 	}
 	return TRUE;
 
 }
 
 int is_operator(char *string){
-	//keep track of reference
-	char *ptr = string;
 	
-	while( *ptr != NONE ){
-		switch(*(ptr++)){
+	while( *string ){
+		switch(*(string++)){
 			case '-':
 			case '+':
 			case '*':
@@ -221,7 +283,7 @@ int read_next(char * element){
 	}
 				
 	// Line is done
-	if (read_char == '\n' || read_char == NONE){
+	if (read_char =! ' '){
 		return 0;
 	}
 
@@ -229,12 +291,96 @@ int read_next(char * element){
 	return 1;
 }
 
-void parse_prefix(Stack *stack){
+void parse_prefix(){
+	char *output = (char*)malloc(MAX_SYMBOLS*sizeof(char)+1);
+	*output = NONE;
+	Stack *input = Stack_create(MAX_SYMBOLS);
+	Stack *queue = Stack_create(MAX_SYMBOLS);
 	
+	// Element read
+	char *read_str;
+	// First argument
+	char *char_arg1;
+	int int_arg1 = 0;
 	
+	// Second argument
+	char *char_arg2 = 0;
+	int int_arg2;
+	
+	// Operand
+	char *op;
+	
+	// Read into stack
+	while(TRUE){
+		int_arg1 = read_next(read_str);
+		if (!Stack_push(input,read_str)){
+			perror("Unable to push into stack");
+			exit(1);
+		}
+		else if (int_arg1){
+			break;
+		}			
+		
+	}
+	
+	// Parse prefix
+	while(!Stack_is_empty(input)){
+		if(is_operator(Stack_peek(input))){
+			op = Stack_pop(input);
+			char_arg1 = Stack_pop(queue);
+			char_arg2 = Stack_pop(queue);
+			
+			if (is_variable(char_arg1) || is_variable(char_arg2) ){
+				switch(*op){
+					case '+':
+					case '-':
+					case '*':
+					case '/':
+						concatenate_string(concatenate_string(concatenate_string(output,op),char_arg1),char_arg2);
+						break;
+					default:
+						perror("Undefined operator!\n");
+						exit(1);
+				}
+			}
+			else if (is_number(char_arg1) || is_number(char_arg2) ){
+				if( !(to_int(char_arg1,&int_arg1) && to_int(char_arg2,&int_arg2)) ){
+					perror("Failed to convert char to int!");
+					exit(1);
+				}
+				
+				switch(*op){
+					
+					case '+':
+					
+						break;
+					case '-':
+					
+						break;
+					case '*':
+					
+						break;
+					case '/':
+						
+						break;
+					default:
+						perror("Undefined operator!\n");
+						exit(1);
+				}
+			}		
+		}
+		else {		
+			if (!Stack_push(queue,Stack_pop(input))){
+			perror("Unable to push into stack");
+			exit(1);
+			}
+		}
+	}
 }
 
 void main(){
+
+
 
 }	
 	
