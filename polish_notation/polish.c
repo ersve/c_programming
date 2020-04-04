@@ -1,11 +1,10 @@
 
-
 #include <stdio.h> 
 #include <stdlib.h>
 
 
 #define MAX_SYMBOLS 2048
-#define MAX_STRING 4
+#define MAX_STRING 10
 #define TRUE 1
 #define FALSE 0
 #define NONE '\0'
@@ -45,23 +44,41 @@ int to_int(char *string, int *integer){
 	return 1;
 }
 // Function to convert an integer to a string number represenation
-int to_string(char *string, int *integer){
+int to_string(char *string, int integer){
+	
+	int digits = 0;
+	int number = integer;
+	int rem = 0;
+
 	
 	if (string == NULL){
 		perror("in function to_string: pointer is NULL\n");
-	return 0;
-	
-	// Handle 0 seperatly since (char) 0 = '\0'
-	if(*integer == 0){
-		*string++ = '0';
-		*string = '\0';
 		return 0;
 	}
 	
+	if(integer < 0){
+		*string++ = '-';
+		integer *= -1;
+	}
+	
+	
+	while(TRUE){		
+		digits++;
+		if(number /= 10){}
+		else {break;}
+	}
+	
+	for( number = 0; number < digits ; number++ ){		
+		rem = integer % 10;
+        integer = integer / 10;
+        *(string + digits - (number + 1)) = rem + '0';
+	}
+	
+	*(string+digits) = '\0';
+	return 1;
 	
 }
-}
-
+	
 // Function to copy the contents from one string to another
 char *copy_string(char *destination, char *target){
 	
@@ -187,6 +204,8 @@ void Stack_free(Stack *stack) {
 	
 	// Free struct
 	free(stack);
+	
+	
 
 }
 // function to reset the stack without freeing memory
@@ -199,11 +218,9 @@ void Stack_clear(Stack *stack){
 	}
 	stack->index = -1;
 }
-
+// Function that checks if the input string is a number
 int is_number(char *string){
-	
-
-	
+		
 	while( *string ){
 		switch(*(string++)){
 			case '-':
@@ -230,7 +247,7 @@ int is_number(char *string){
 	}
 	return TRUE;
 }
-
+// Function to check if the input string is a variable(small letter)
 int is_variable(char *string){
 
 	while( *string ){
@@ -244,7 +261,7 @@ int is_variable(char *string){
 	return TRUE;
 
 }
-
+// Function to check if the input string is a mathematical operator
 int is_operator(char *string){
 	
 	while( *string ){
@@ -261,16 +278,27 @@ int is_operator(char *string){
 	}
 	return TRUE;
 }
-
-int read_next(char * element){
+// Function that assesses if two strings have the same content
+int is_equal(char *string1, char* string2){
+	while( *string1 || *string2 ){
+		if(*string1++ != *string2++){
+			return 0;
+		}
+		
+	}
+	return 1;
+}
+// Function that parse one "Symbol" from the stdin
+char read_next(char * element){
 	char read_char;
 	//keep reference
 	char *expression = element;
 	while (TRUE) {		
 			
-		read_char = getc(stdin);
+		read_char = getchar();
 		
-		if(read_char == '\n' || read_char == NONE || read_char == ' ') { //done parsing the expression
+		
+		if(read_char == '\n' || feof(stdin) || read_char == ' ' || read_char == 0 ) { //done parsing the expression
 			
 			// end the current expression
 			*expression = NONE;
@@ -283,50 +311,65 @@ int read_next(char * element){
 	}
 				
 	// Line is done
-	if (read_char =! ' '){
+	if (read_char != ' ' ){
+		return 1;
+	}
+	else{
 		return 0;
 	}
+}
+// Function that reads in one prefix expression into the stack
+Stack *Stack_read_stdin(Stack *stack){
 
-	//else 
-	return 1;
+	
+
+	int proceed=0;
+	char array[MAX_STRING];
+	char *read_str = (char *)malloc(MAX_STRING*sizeof(char));
+	
+	if (read_str == NULL){
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+		
+	// Read into stack
+	while(TRUE){
+		proceed = read_next(read_str);
+		printf("read_str:%s\n",read_str);
+		printf("proceed:%d\n",proceed);
+		if (!Stack_push(stack,read_str)){
+			perror("Unable to push into stack");
+			exit(1);
+		}
+		if (proceed == 1){
+			break;
+		}			
+		
+	}
+	free(read_str);
+	return stack;
 }
 
-void parse_prefix(){
-	char *output = (char*)malloc(MAX_SYMBOLS*sizeof(char)+1);
-	*output = NONE;
-	Stack *input = Stack_create(MAX_SYMBOLS);
-	Stack *queue = Stack_create(MAX_SYMBOLS);
+// Function that parses and simplifies a prefix expression stored in a Stack
+void parse_prefix(Stack *stack, Stack *queue){
 	
-	// Element read
-	char *read_str;
 	// First argument
 	char *char_arg1;
 	int int_arg1 = 0;
 	
 	// Second argument
-	char *char_arg2 = 0;
-	int int_arg2;
+	char *char_arg2;
+	int int_arg2 = 0;
 	
 	// Operand
 	char *op;
 	
-	// Read into stack
-	while(TRUE){
-		int_arg1 = read_next(read_str);
-		if (!Stack_push(input,read_str)){
-			perror("Unable to push into stack");
-			exit(1);
-		}
-		else if (int_arg1){
-			break;
-		}			
+	while(!Stack_is_empty(stack)){
 		
-	}
-	
-	// Parse prefix
-	while(!Stack_is_empty(input)){
-		if(is_operator(Stack_peek(input))){
-			op = Stack_pop(input);
+		
+		if(is_operator(Stack_peek(stack))){
+			
+			op = Stack_pop(stack);
 			char_arg1 = Stack_pop(queue);
 			char_arg2 = Stack_pop(queue);
 			
@@ -336,7 +379,11 @@ void parse_prefix(){
 					case '-':
 					case '*':
 					case '/':
-						concatenate_string(concatenate_string(concatenate_string(output,op),char_arg1),char_arg2);
+						
+						Stack_push(queue,op);
+						Stack_push(queue,char_arg1);
+						Stack_push(queue,char_arg2);
+						
 						break;
 					default:
 						perror("Undefined operator!\n");
@@ -344,6 +391,7 @@ void parse_prefix(){
 				}
 			}
 			else if (is_number(char_arg1) || is_number(char_arg2) ){
+				
 				if( !(to_int(char_arg1,&int_arg1) && to_int(char_arg2,&int_arg2)) ){
 					perror("Failed to convert char to int!");
 					exit(1);
@@ -352,16 +400,22 @@ void parse_prefix(){
 				switch(*op){
 					
 					case '+':
-					
+						
+						to_string(char_arg1, int_arg1 + int_arg2);
+						Stack_push(queue,char_arg1);
+						
 						break;
 					case '-':
-					
+						to_string(char_arg1, int_arg1 - int_arg2);
+						Stack_push(queue,char_arg1);
 						break;
 					case '*':
-					
+						to_string(char_arg1, int_arg1 * int_arg2);
+						Stack_push(queue,char_arg1);
 						break;
 					case '/':
-						
+						to_string(char_arg1, int_arg1 / int_arg2);
+						Stack_push(queue,char_arg1);
 						break;
 					default:
 						perror("Undefined operator!\n");
@@ -370,25 +424,353 @@ void parse_prefix(){
 			}		
 		}
 		else {		
-			if (!Stack_push(queue,Stack_pop(input))){
+			
+			if (!Stack_push(queue,Stack_pop(stack))){
 			perror("Unable to push into stack");
 			exit(1);
 			}
 		}
 	}
 }
+// Function that pops the content of a stack to a string
+char *Stack_to_string(Stack *stack,char *string){
+
+	while(!Stack_is_empty(stack)){
+		concatenate_string(string,Stack_pop(stack));
+		if(Stack_peek(stack) != NULL){
+			concatenate_string(string," ");
+		}
+		else{
+			concatenate_string(string,"\n");
+		}
+	}
+	return string;
+}
+
+void test();
 
 void main(){
+	//Stack *queue = Stack_create(MAX_SYMBOLS);
+	Stack *stack = Stack_create(MAX_SYMBOLS);
+	char array[2*MAX_SYMBOLS];
+	char *string = &array[0];
+	char test;
+	
+while(TRUE){
+	
+
+	
+	Stack_read_stdin(stack);
+	//parse_prefix(stack,queue);
+	printf("%s", Stack_to_string(stack,string));
+	
+	
+}
+//Stack_free(queue);
+Stack_free(stack);
 
 
 
+/*
+	while(!Stack_is_empty(stack)){
+		printf("%s ",Stack_pop(stack));
+	}
+	
+Stack_free(stack);
+*/
 }	
+
 	
 
 		
 	
 	
+void test(){
+		//Test to_int
+	printf("Testing to_int:\n");
+	int test1_int;
+	to_int("-100",&test1_int);
 	
+	if (test1_int == -100){
+		printf("Test (1/3) : success\n");
+	}
+	else { 
+		printf("Test (1/3) : failiure\n");
+		}
+		
+	to_int("0",&test1_int);	
+	if (test1_int == 0){
+		printf("Test (2/3) : success\n");
+	}
+	else { 
+		printf("Test (2/3) : failiure\n");
+		}
+		
+	to_int("100",&test1_int);	
+	if (test1_int == 100){
+		printf("Test (3/3) : success\n");
+	}
+	else { 
+		printf("Test (3/3) : failiure\n");
+		}
+	
+	//test is_equal
+	printf("Testing is_equal:\n");
+	char *str1 = "equal";
+	char *str2 = "equal";
+	char *str3 = "equa";
+	char *str4 = "diffe";
+	if (is_equal(str1,str2)){
+		printf("Test (1/4) : success\n");
+	}
+	else { 
+		printf("Test (1/4) : failiure\n");
+	}
+		
+	if (!is_equal(str2,str3)){
+		printf("Test (2/4) : success\n");
+	}
+	else { 
+		printf("Test (2/4) : failiure\n");
+	}
+	if (!is_equal(str1,str3)){
+		printf("Test (3/4) : success\n");
+	}
+	else { 
+		printf("Test (3/4) : failiure\n");
+		}
+	if (!is_equal(str1,str4)){
+		printf("Test (4/4) : success\n");
+	}
+	else { 
+		printf("Test (4/4) : failiure\n");
+		}
+	
+	
+	//Test to_string
+	printf("Testing to_string:\n");
+	
+	char test2[10];
+	char res2[10];
+	char *test2_str = &test2[0];
+	char *res2_str = &res2[0];
+	copy_string(res2_str,"-10");
+	to_string(test2_str,-10);
+	if (is_equal(test2_str,res2_str)){
+		printf("Test (1/3) : success\n");
+	}
+	else { 
+		printf("Test (1/3) : failiure\n");
+	}
+		
+	copy_string(res2_str,"0");		
+	to_string(test2_str,0);	
+	if (is_equal(test2_str,res2_str)){
+		printf("Test (2/3) : success\n");
+	}
+	else { 
+		printf("Test (2/3) : failiure\n");
+		}
+	copy_string(res2_str,"10");	
+	to_string(test2_str,10);	
+	if (is_equal(test2_str,res2_str)){
+		printf("Test (3/3) : success\n");
+	}
+	else { 
+		printf("Test (3/3) : failiure\n");
+		}
+	
+	
+	//test copy_string
+	
+	printf("Testing copy_string:\n");
+	char *test3= "testar1";
+	char result[10];
+	char * result3 = &result[0];
+	copy_string(result3,test3);
+	if (is_equal(result3,test3)){
+		printf("Test (1/1) : success\n");
+	}
+	else { 
+		printf("Test (1/1) : failiure\n");
+		}
+	
+	
+	//test concatenate_string
+	printf("Testing concatenate_string:\n");
+	char testv4[10]={'\0'};
+	char resultv4[10]={'\0'};
+	char *test4 = &testv4[0];
+	char *result4 =&resultv4[0];
+	concatenate_string(test4,"");
+	if (is_equal(result4,test4)){
+		printf("Test (1/3) : success\n");
+	}
+	else { 
+		printf("Test (1/3) : failiure\n");
+		}
+	concatenate_string(test4,"lol");
+	copy_string(result4,"lol");
+	if (is_equal(result4,test4)){
+		printf("Test (1/3) : success\n");
+	}
+	else { 
+		printf("Test (1/3) : failiure\n");
+		}
+	concatenate_string(test4,"lol");
+	copy_string(result4,"lollol");	
+	if (is_equal(result4,test4)){
+		printf("Test (1/3) : success\n");
+	}
+	else { 
+		printf("Test (1/3) : failiure\n");
+		}
+	
+	//test is_number
+	printf("Testing is_number:\n");
+	if(is_number("10")){
+		printf("Test (1/4) : success\n");
+	}
+	else { 
+		printf("Test (1/4) : failiure\n");
+		}
+		
+	if(is_number("-10")){
+		printf("Test (2/4) : success\n");
+	}
+	else { 
+		printf("Test (2/4) : failiure\n");
+		}
+	if(!is_number("a")){
+		printf("Test (3/4) : success\n");
+	}
+	else { 
+		printf("Test (3/4) : failiure\n");
+	}
+	if(!is_number("4a")){
+		printf("Test (4/4) : success\n");
+	}
+	else { 
+		printf("Test (4/4) : failiure\n");
+		}
+	
+	//test is_operator
+		printf("Testing is_operator:\n");
+	if(is_operator("+")){
+		printf("Test (1/4) : success\n");
+	}
+	else { 
+		printf("Test (1/4) : failiure\n");
+		}
+		
+	if(is_operator("-")){
+		printf("Test (2/4) : success\n");
+	}
+	else { 
+		printf("Test (2/4) : failiure\n");
+		}
+	if(!is_operator("a")){
+		printf("Test (3/4) : success\n");
+	}
+	else { 
+		printf("Test (3/4) : failiure\n");
+	}
+	if(!is_operator("4")){
+		printf("Test (4/4) : success\n");
+	}
+	else { 
+		printf("Test (4/4) : failiure\n");
+		}
+	
+	//test is_variable
+	printf("Testing is_variable:\n");
+	if(!is_variable("10")){
+		printf("Test (1/4) : success\n");
+	}
+	else { 
+		printf("Test (1/4) : failiure\n");
+		}
+		
+	if(!is_variable("-10")){
+		printf("Test (2/4) : success\n");
+	}
+	else { 
+		printf("Test (2/4) : failiure\n");
+		}
+	if(is_variable("a")){
+		printf("Test (3/4) : success\n");
+	}
+	else { 
+		printf("Test (3/4) : failiure\n");
+	}
+	if(is_variable("z")){
+		printf("Test (4/4) : success\n");
+	}
+	else { 
+		printf("Test (4/4) : failiure\n");
+	}
+	
+	//test Stack_create
+	printf("Testing Stack_create:\n");
+	Stack *stack_test = Stack_create(1);
+	if( stack_test != NULL){
+		printf("Test (1/1) : success\n");
+	}
+	else { 
+		printf("Test (1/1) : failiure\n");
+	}
+	
+	//test Stack_push
+	printf("Testing Stack_push:\n");
+	if( Stack_push(stack_test,"test")){
+		printf("Test (1/2) : success\n");
+	}
+	else { 
+		printf("Test (1/2) : failiure\n");
+	}
+	
+		if(!Stack_push(stack_test,"test")){
+		printf("Test (2/2) : success\n");
+	}
+	else { 
+		printf("Test (2/2) : failiure\n");
+	}	
+	
+	//test Stack_pop
+	printf("Testing Stack_pop:\n");
+	if( is_equal(Stack_pop(stack_test),"test")){
+		printf("Test (1/2) : success\n");
+	}
+	else { 
+		printf("Test (1/2) : failiure\n");
+	}
+	
+
+	if( Stack_pop(stack_test) == NULL){
+		printf("Test (1/2) : success\n");
+	}
+	else { 
+		printf("Test (1/2) : failiure\n");
+	}
+		
+	//test Stack_peek
+	printf("Testing Stack_peek:\n");	
+	if( Stack_peek(stack_test) == NULL){
+		printf("Test (1/2) : success\n");
+	}
+	else { 
+		printf("Test (1/2) : failiure\n");
+	}
+	Stack_push(stack_test,"test");
+	
+	if( is_equal(Stack_peek(stack_test),"test")){
+		printf("Test (2/2) : success\n");
+	}
+	else { 
+		printf("Test (2/2) : failiure\n");
+	}
+	
+}	
 	
 	
 	
