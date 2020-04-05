@@ -335,8 +335,8 @@ Stack *Stack_read_stdin(Stack *stack){
 	// Read into stack
 	while(TRUE){
 		proceed = read_next(read_str);
-		printf("read_str:%s\n",read_str);
-		printf("proceed:%d\n",proceed);
+		//printf("read_str:%s\n",read_str);
+		//printf("proceed:%d\n",proceed);
 		if (!Stack_push(stack,read_str)){
 			perror("Unable to push into stack");
 			exit(1);
@@ -352,7 +352,7 @@ Stack *Stack_read_stdin(Stack *stack){
 
 // Function that parses and simplifies a prefix expression stored in a Stack
 void parse_prefix(Stack *stack, Stack *queue){
-	
+
 	// First argument
 	char *char_arg1;
 	int int_arg1 = 0;
@@ -365,12 +365,14 @@ void parse_prefix(Stack *stack, Stack *queue){
 	char *op;
 	
 	while(!Stack_is_empty(stack)){
-		
+		//printf("loop: %d\n",test++);
 		
 		if(is_operator(Stack_peek(stack))){
 			
 			op = Stack_pop(stack);
+			//printf("char_arg1: %s\n",Stack_peek(queue));
 			char_arg1 = Stack_pop(queue);
+			//printf("char_arg2: %s\n",Stack_peek(queue));
 			char_arg2 = Stack_pop(queue);
 			
 			if (is_variable(char_arg1) || is_variable(char_arg2) ){
@@ -380,9 +382,10 @@ void parse_prefix(Stack *stack, Stack *queue){
 					case '*':
 					case '/':
 						
-						Stack_push(queue,op);
+						
 						Stack_push(queue,char_arg1);
 						Stack_push(queue,char_arg2);
+						Stack_push(queue,op);
 						
 						break;
 					default:
@@ -421,6 +424,9 @@ void parse_prefix(Stack *stack, Stack *queue){
 						perror("Undefined operator!\n");
 						exit(1);
 				}
+			}
+			else{
+				printf("why do i get here?");
 			}		
 		}
 		else {		
@@ -434,7 +440,7 @@ void parse_prefix(Stack *stack, Stack *queue){
 }
 // Function that pops the content of a stack to a string
 char *Stack_to_string(Stack *stack,char *string){
-
+	*string = '\0'; //overwrite old string
 	while(!Stack_is_empty(stack)){
 		concatenate_string(string,Stack_pop(stack));
 		if(Stack_peek(stack) != NULL){
@@ -450,23 +456,30 @@ char *Stack_to_string(Stack *stack,char *string){
 void test();
 
 void main(){
-	//Stack *queue = Stack_create(MAX_SYMBOLS);
+	Stack *queue = Stack_create(MAX_SYMBOLS);
 	Stack *stack = Stack_create(MAX_SYMBOLS);
 	char array[2*MAX_SYMBOLS];
 	char *string = &array[0];
 	char test;
 	
-while(TRUE){
+
+	
+
+	while(TRUE){
+		if(feof(stdin)){ break;}
+		Stack_read_stdin(stack);
+		parse_prefix(stack,queue);
+		printf("%s",Stack_to_string(queue,string));
+		
+	}
+	
+
+
 	
 
 	
-	Stack_read_stdin(stack);
-	//parse_prefix(stack,queue);
-	printf("%s", Stack_to_string(stack,string));
-	
-	
-}
-//Stack_free(queue);
+
+Stack_free(queue);
 Stack_free(stack);
 
 
@@ -477,6 +490,17 @@ Stack_free(stack);
 	}
 	
 Stack_free(stack);
+* 
+* 	printf("queue: ");
+	while(!Stack_is_empty(queue)){
+		printf("%s ",Stack_pop(queue));
+	}
+	printf("\n");
+	printf("stack: ");
+	while(!Stack_is_empty(stack)){
+		printf("%s ",Stack_pop(stack));
+	}
+	printf("\n");
 */
 }	
 
