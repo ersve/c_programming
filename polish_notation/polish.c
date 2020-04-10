@@ -102,12 +102,13 @@ char *copy_string(char *destination, char *target){
 }
 
 // Function to concatenate the target string into the source
-char *concatenate_string(char *destination, char *target){
-	
+// returns the number of appended characters
+int concatenate_string(char *destination, char *target){
+	int appended = 0;
 	// Return if no memory has been allocated
 	if ( destination == NULL || target == NULL) {
 		perror("in function concatenate_string: pointer is NULL\n");
-		return NULL;		
+		return appended;		
 	}
 	
 	char* ptr = destination;
@@ -118,12 +119,14 @@ char *concatenate_string(char *destination, char *target){
 		}
 	
 	// Copy contents of target into source
-	while(*destination++ = *target++);
+	while(*destination++ = *target++){
+		appended++;
+	}
 	
 	// End the string with NUL
 	*destination = '\0';
 	
-	return ptr;
+	return appended;
 }
 
 // Function to initialize the stack
@@ -161,19 +164,20 @@ char *Stack_peek(Stack *stack) {
 	if (!Stack_is_empty(stack)) {
 		return stack->array[stack->index];
 	}
-	return NONE;
+	return NULL;
 }
 // Function to remove the latest appended value from the stack
-char *Stack_pop(Stack *stack) {
+int Stack_pop(Stack *stack, char *string) {
 	if (!Stack_is_empty(stack)) {
-		return stack->array[stack->index--];
+		return copy_string(string,stack->array[stack->index--]) == NULL;
 	}
-	return NONE;
+	return 1;
 }
 // Function to push a string into the stack
 int Stack_push(Stack *stack, char *string) {
 	
 	if (!Stack_is_full(stack)) {
+		
 		// Move to next index
 		stack->index++;
 		
@@ -182,14 +186,14 @@ int Stack_push(Stack *stack, char *string) {
 			stack->array[stack->index] = malloc(MAX_STRING*sizeof(char));
 			// Malloc failed
 			if (stack->array[stack->index] == NULL){
-				return FALSE;
+				return 1;
 			}
 		}
 		// return operation outcome
-		return copy_string(stack->array[stack->index],string) ? TRUE : FALSE;		
+		return copy_string(stack->array[stack->index],string) != NULL ? 0 : 1;		
 		
 	}
-	return FALSE;
+	return 1;
 }
 
 // Function to free all the memory allocated by the stack
@@ -252,7 +256,7 @@ int is_variable(char *string){
 
 	while( *string ){
 		
-		if(*string == '-' && *string ){  }
+		if(*string == '-' && *(string+1)){  }
 		else if (*string >= 'a' && *string <= 'z') {  }
 		else { return FALSE; }
 		
@@ -288,6 +292,30 @@ int is_equal(char *string1, char* string2){
 	}
 	return 1;
 }
+/*
+// Function that pops the content of a stack to a string
+char *Stack_to_string(Stack *stack,char *string){
+	*string = '\0'; //overwrite old string
+	while(!Stack_is_empty(stack)){
+		concatenate_string(string,Stack_pop(stack));
+		if(Stack_peek(stack) != NULL){
+			concatenate_string(string," ");
+		}
+		else{
+			concatenate_string(string,"\n");
+		}
+	}
+	return string;
+}
+*/
+
+void Stack_print(Stack *stack){
+	int i;
+	for (i = 0; i<stack->index+1; i++) {
+		printf("%s ", stack->array[i]);
+	}
+	printf("\n");
+}
 // Function that parse one "Symbol" from the stdin
 char read_next(char * element){
 	char read_char;
@@ -321,8 +349,6 @@ char read_next(char * element){
 // Function that reads in one prefix expression into the stack
 Stack *Stack_read_stdin(Stack *stack){
 
-	
-
 	int proceed=0;
 	char array[MAX_STRING];
 	char *read_str = (char *)malloc(MAX_STRING*sizeof(char));
@@ -337,7 +363,7 @@ Stack *Stack_read_stdin(Stack *stack){
 		proceed = read_next(read_str);
 		//printf("read_str:%s\n",read_str);
 		//printf("proceed:%d\n",proceed);
-		if (!Stack_push(stack,read_str)){
+		if (Stack_push(stack,read_str)){
 			perror("Unable to push into stack");
 			exit(1);
 		}
@@ -351,29 +377,48 @@ Stack *Stack_read_stdin(Stack *stack){
 }
 
 // Function that parses and simplifies a prefix expression stored in a Stack
-void parse_prefix(Stack *stack, Stack *queue){
-
+void parse_prefix(Stack *stack, char *result ){
+	// internal stack
+	Stack *queue = Stack_create(MAX_SYMBOLS);
+	char *track = result;
+	int test = 0;
 	// First argument
-	char *char_arg1;
+	char *char_arg1 = (char *)malloc(MAX_STRING*sizeof(char));
 	int int_arg1 = 0;
 	
 	// Second argument
-	char *char_arg2;
+	char *char_arg2 = (char *)malloc(MAX_STRING*sizeof(char));
 	int int_arg2 = 0;
 	
 	// Operand
-	char *op;
+	char *op = (char *)malloc(MAX_STRING*sizeof(char));
+	
+	// Result of calculation
+	char *res = (char *)malloc(MAX_STRING*sizeof(char));
 	
 	while(!Stack_is_empty(stack)){
-		//printf("loop: %d\n",test++);
-		
+		printf("loop: %d\n",test++);
+		printf("Stack content: ");
+		Stack_print(stack);
+		printf("queue content: ");
+		Stack_print(queue);
+		printf("Result: %s\n",track);
 		if(is_operator(Stack_peek(stack))){
+			printf("in Operator\n");
+			if (Stack_pop(stack,op)){
+				printf("Failed to pop to op\n");
+			}
+			printf("op: %s\n",op);
 			
-			op = Stack_pop(stack);
-			//printf("char_arg1: %s\n",Stack_peek(queue));
-			char_arg1 = Stack_pop(queue);
-			//printf("char_arg2: %s\n",Stack_peek(queue));
-			char_arg2 = Stack_pop(queue);
+			if (Stack_pop(queue,char_arg1)){
+				printf("Failed to pop to char_arg1\n");
+			}
+			printf("char_arg1: %s\n",char_arg1);
+			
+			if (Stack_pop(queue,char_arg2)){
+				printf("Failed to pop to char_arg2\n");
+			}
+			printf("char_arg2: %s\n",char_arg2);
 			
 			if (is_variable(char_arg1) || is_variable(char_arg2) ){
 				switch(*op){
@@ -383,17 +428,34 @@ void parse_prefix(Stack *stack, Stack *queue){
 					case '/':
 						
 						
-						Stack_push(queue,char_arg1);
-						Stack_push(queue,char_arg2);
-						Stack_push(queue,op);
+						//if(Stack_push(queue,char_arg1)){
+						//	printf("Failed to push char_arg1:%s\n",char_arg1);
+						//}
+						//printf("char_arg1: Stack got %s when pushed %s\n",Stack_peek(queue),char_arg1);
+						result += concatenate_string(result,char_arg1)-1;
+						result += concatenate_string(result," ")-1;
 						
+						//if(Stack_push(queue,char_arg2)){
+						//	printf("Failed to push char_arg1:%s\n",char_arg2);
+						//}
+						//printf("char_arg2: Stack got %s when pushed %s\n",Stack_peek(queue),char_arg2);
+						result += concatenate_string(result,char_arg2)-1;
+						result += concatenate_string(result," ")-1;
+						
+						//if(Stack_push(queue,op)){
+						//	printf("Failed to push op:%s\n",op);
+						//}
+						//printf("op: Stack got %s when pushed %s\n",Stack_peek(queue),op);
+						result += concatenate_string(result,op)-1;
+						result += concatenate_string(result," ")-1;
+						printf("Result: %s\n",track);
 						break;
 					default:
 						perror("Undefined operator!\n");
 						exit(1);
 				}
 			}
-			else if (is_number(char_arg1) || is_number(char_arg2) ){
+			else if (is_number(char_arg1) && is_number(char_arg2) ){
 				
 				if( !(to_int(char_arg1,&int_arg1) && to_int(char_arg2,&int_arg2)) ){
 					perror("Failed to convert char to int!");
@@ -404,21 +466,21 @@ void parse_prefix(Stack *stack, Stack *queue){
 					
 					case '+':
 						
-						to_string(char_arg1, int_arg1 + int_arg2);
-						Stack_push(queue,char_arg1);
+						to_string(res, int_arg1 + int_arg2);
+						Stack_push(queue,res);
 						
 						break;
 					case '-':
-						to_string(char_arg1, int_arg1 - int_arg2);
-						Stack_push(queue,char_arg1);
+						to_string(res, int_arg1 - int_arg2);
+						Stack_push(queue,res);
 						break;
 					case '*':
-						to_string(char_arg1, int_arg1 * int_arg2);
+						to_string(res, int_arg1 * int_arg2);
 						Stack_push(queue,char_arg1);
 						break;
 					case '/':
-						to_string(char_arg1, int_arg1 / int_arg2);
-						Stack_push(queue,char_arg1);
+						to_string(res, int_arg1 / int_arg2);
+						Stack_push(queue,res);
 						break;
 					default:
 						perror("Undefined operator!\n");
@@ -430,33 +492,32 @@ void parse_prefix(Stack *stack, Stack *queue){
 			}		
 		}
 		else {		
-			
-			if (!Stack_push(queue,Stack_pop(stack))){
+			Stack_pop(stack,res);
+			if (Stack_push(queue,res)){
 			perror("Unable to push into stack");
 			exit(1);
 			}
 		}
 	}
+	Stack_pop(queue,res);
+	result += concatenate_string(result,res);
+    result += concatenate_string(result,"\n");
+    *(result+1) = '\0';
+    
+    
+	free(char_arg1);
+	free(char_arg2);
+	free(op);
+	free(res);
+	Stack_free(queue);
+	printf("Result: %s\n",result);
 }
-// Function that pops the content of a stack to a string
-char *Stack_to_string(Stack *stack,char *string){
-	*string = '\0'; //overwrite old string
-	while(!Stack_is_empty(stack)){
-		concatenate_string(string,Stack_pop(stack));
-		if(Stack_peek(stack) != NULL){
-			concatenate_string(string," ");
-		}
-		else{
-			concatenate_string(string,"\n");
-		}
-	}
-	return string;
-}
+
 
 void test();
 
 void main(){
-	Stack *queue = Stack_create(MAX_SYMBOLS);
+
 	Stack *stack = Stack_create(MAX_SYMBOLS);
 	char array[2*MAX_SYMBOLS];
 	char *string = &array[0];
@@ -468,8 +529,8 @@ void main(){
 	while(TRUE){
 		if(feof(stdin)){ break;}
 		Stack_read_stdin(stack);
-		parse_prefix(stack,queue);
-		printf("%s",Stack_to_string(queue,string));
+		parse_prefix(stack,string);
+		
 		
 	}
 	
@@ -479,7 +540,6 @@ void main(){
 
 	
 
-Stack_free(queue);
 Stack_free(stack);
 
 
@@ -507,7 +567,7 @@ Stack_free(stack);
 	
 
 		
-	
+/*	
 	
 void test(){
 		//Test to_int
@@ -761,8 +821,9 @@ void test(){
 	}	
 	
 	//test Stack_pop
+	char char_test[MAX_STRING];
 	printf("Testing Stack_pop:\n");
-	if( is_equal(Stack_pop(stack_test),"test")){
+	if( is_equal(Stack_pop(stack_test,&char_test[0]),"test")){
 		printf("Test (1/2) : success\n");
 	}
 	else { 
@@ -770,7 +831,7 @@ void test(){
 	}
 	
 
-	if( Stack_pop(stack_test) == NULL){
+	if( Stack_pop(stack_test,&char_test[0]) == NULL){
 		printf("Test (1/2) : success\n");
 	}
 	else { 
@@ -796,7 +857,7 @@ void test(){
 	
 }	
 	
-	
+*/	
 	
 	
 	
